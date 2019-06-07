@@ -8,6 +8,7 @@
 
 namespace Emico\Tweakwise\Model\Client\Type;
 
+use Emico\Tweakwise\Model\Client\Type\FacetType\CategorySettingsType;
 use Emico\Tweakwise\Model\Client\Type\FacetType\SettingsType;
 
 /**
@@ -16,6 +17,7 @@ use Emico\Tweakwise\Model\Client\Type\FacetType\SettingsType;
  */
 class FacetType extends Type
 {
+
     /**
      * @param SettingsType|array $settings
      * @return $this
@@ -23,11 +25,24 @@ class FacetType extends Type
     public function setFacetSettings($settings)
     {
         if (!$settings instanceof SettingsType) {
-            $settings = new SettingsType($settings);
+            $settings = $this->getSettingsTypeFromArray($settings);
         }
 
         $this->data['facet_settings'] = $settings;
         return $this;
+    }
+
+    /**
+     * @param array $settings
+     * @return SettingsType|CategorySettingsType
+     */
+    protected function getSettingsTypeFromArray(array $settings): SettingsType
+    {
+        if ($settings['source'] === SettingsType::SOURCE_CATEGORY) {
+            return new CategorySettingsType($settings);
+        }
+
+        return new SettingsType($settings);
     }
 
     /**
