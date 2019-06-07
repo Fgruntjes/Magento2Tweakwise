@@ -330,7 +330,9 @@ class QueryParameterStrategy implements UrlInterface, FilterApplierInterface, Ca
     public function apply(HttpRequest $request, ProductNavigationRequest $navigationRequest): FilterApplierInterface
     {
         $categories = $this->getCategoryFilters($request);
-        $navigationRequest->addCategoryPathFilter($categories);
+        if ($categories) {
+            $navigationRequest->addCategoryPathFilter($categories);
+        }
 
         $attributeFilters = $this->getAttributeFilters($request);
         foreach ($attributeFilters as $attribute => $values) {
