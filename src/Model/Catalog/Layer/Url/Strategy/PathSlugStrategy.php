@@ -362,29 +362,25 @@ class PathSlugStrategy implements UrlInterface, RouteMatchingInterface, FilterAp
     /**
      * @param HttpRequest $request
      * @param Item $item
-     * @param CategoryInterface $category
      * @return string
      */
     public function getCategoryTreeSelectUrl(
         HttpRequest $request,
-        Item $item,
-        CategoryInterface $category
+        Item $item
     ): string {
-        return $this->queryParameterStrategy->getCategoryTreeSelectUrl($request, $item, $category);
+        return $this->queryParameterStrategy->getCategoryTreeSelectUrl($request, $item);
     }
 
     /**
      * @param HttpRequest $request
      * @param Item $item
-     * @param CategoryInterface $category
      * @return mixed
      */
     public function getCategoryTreeRemoveUrl(
         HttpRequest $request,
-        Item $item,
-        CategoryInterface $category
+        Item $item
     ): string {
-        return $this->queryParameterStrategy->getCategoryTreeRemoveUrl($request, $item, $category);
+        return $this->queryParameterStrategy->getCategoryTreeRemoveUrl($request, $item);
     }
 
     /**
@@ -395,10 +391,9 @@ class PathSlugStrategy implements UrlInterface, RouteMatchingInterface, FilterAp
      */
     public function getCategoryFilterSelectUrl(
         HttpRequest $request,
-        Item $item,
-        CategoryInterface $category
+        Item $item
     ): string {
-        return $this->queryParameterStrategy->getCategoryFilterSelectUrl($request, $item, $category);
+        return $this->queryParameterStrategy->getCategoryFilterSelectUrl($request, $item);
     }
 
     /**
@@ -409,8 +404,7 @@ class PathSlugStrategy implements UrlInterface, RouteMatchingInterface, FilterAp
      */
     public function getCategoryFilterRemoveUrl(
         HttpRequest $request,
-        Item $item,
-        CategoryInterface $category
+        Item $item
     ): string {
         return $this->getAttributeRemoveUrl($request, $item);
     }
