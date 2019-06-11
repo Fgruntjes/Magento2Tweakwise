@@ -18,6 +18,8 @@ use Emico\Tweakwise\Model\Client\Request\ProductNavigationRequest;
 use Emico\Tweakwise\Model\Client\Type\FacetType\SettingsType;
 use Magento\Catalog\Api\Data\CategoryInterface;
 use Zend\Http\Request as HttpRequest;
+use Magento\Catalog\Api\CategoryRepositoryInterface;
+use Emico\TweakwiseExport\Model\Helper as ExportHelper;
 
 /**
  * Class Url will later implement logic to use implementation selected in configuration.
@@ -42,6 +44,16 @@ class Url
     protected $categoryUrlStrategy;
 
     /**
+     * @var CategoryRepositoryInterface
+     */
+    private $categoryRepository;
+
+    /**
+     * @var ExportHelper
+     */
+    private $exportHelper;
+
+    /**
      * @var HttpRequest
      */
     protected $request;
@@ -61,11 +73,15 @@ class Url
     public function __construct(
         UrlStrategyFactory $urlStrategyFactory,
         HttpRequest $request,
+        CategoryRepositoryInterface $categoryRepository,
+        ExportHelper $exportHelper,
         Config $config
     ) {
         $this->urlStrategy = $urlStrategyFactory->create();
         $this->filterApplier = $urlStrategyFactory->create(FilterApplierInterface::class);
         $this->categoryUrlStrategy = $urlStrategyFactory->create(CategoryUrlInterface::class);
+        $this->categoryRepository = $categoryRepository;
+        $this->exportHelper = $exportHelper;
         $this->request = $request;
         $this->config = $config;
     }
@@ -83,33 +99,11 @@ class Url
             ->getFacetSettings();
 
         if ($settings->getSource() === SettingsType::SOURCE_CATEGORY) {
-            return $this->getCategorySelectUrl($item);
+            return $this->categoryUrlStrategy
+                ->getCategoryFilterSelectUrl($this->request, $item);
         }
 
         return $this->urlStrategy->getAttributeSelectUrl($this->request, $item);
-    }
-
-    /**
-     * @param Item $item
-     * @param CategoryInterface $category
-     * @return string
-     */
-    protected function getCategorySelectUrl(Item $item): string
-    {
-        $settings = $item
-            ->getFilter()
-            ->getFacet()
-            ->getFacetSettings();
-
-        if ($settings->getSelectionType() === SettingsType::SELECTION_TYPE_TREE) {
-            return $this->categoryUrlStrategy->getCategoryTreeSelectUrl($this->request, $item);
-        }
-
-        if ($this->config->getCategoryAsLink()) {
-            return $item->getCategory()->getUrl();
-        }
-
-        return $this->categoryUrlStrategy->getCategoryFilterSelectUrl($this->request, $item);
     }
 
     /**
@@ -122,33 +116,10 @@ class Url
             ->getFacetSettings();
 
         if ($settings->getSource() === SettingsType::SOURCE_CATEGORY) {
-            $category = $this->getCategoryFromItem($item);
-            return $this->getCategoryRemoveUrl($item, $category);
+            return $this->categoryUrlStrategy->getCategoryFilterRemoveUrl($this->request, $item);
         }
 
         return $this->urlStrategy->getAttributeRemoveUrl($this->request, $item);
-    }
-
-    /**
-     * @param Item $item
-     * @param CategoryInterface $category
-     * @return string
-     */
-    protected function getCategoryRemoveUrl(Item $item, CategoryInterface $category): string
-    {
-        $settings = $item->getFilter()
-            ->getFacet()
-            ->getFacetSettings();
-
-        if ($settings->getSelectionType() === SettingsType::SELECTION_TYPE_TREE) {
-            return $this->categoryUrlStrategy->getCategoryTreeRemoveUrl($this->request, $item);
-        }
-
-        if ($this->config->getCategoryAsLink()) {
-            return $category->getParentCategory()->getUrl();
-        }
-
-        return $this->categoryUrlStrategy->getCategoryFilterRemoveUrl($this->request, $item);
     }
 
     /**
@@ -175,5 +146,18 @@ class Url
     public function getSliderUrl(Item $item)
     {
         return $this->urlStrategy->getSliderUrl($this->request, $item);
+    }
+
+    /**
+     * @param Item $item
+     * @return CategoryInterface
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    protected function getCategoryFromItem(Item $item): CategoryInterface
+    {
+        $tweakwiseCategoryId = $item->getAttribute()->getAttributeId();
+        $categoryId = $this->exportHelper->getStoreId($tweakwiseCategoryId);
+
+        return $this->categoryRepository->get($categoryId);
     }
 }

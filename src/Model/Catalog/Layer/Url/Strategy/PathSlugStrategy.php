@@ -157,7 +157,7 @@ class PathSlugStrategy implements UrlInterface, RouteMatchingInterface, FilterAp
      */
     public function getClearUrl(HttpRequest $request, array $activeFilterItems): string
     {
-        return $this->buildFilterUrl($request, []);
+        return $this->buildFilterUrl($request);
     }
 
     /**
@@ -276,9 +276,14 @@ class PathSlugStrategy implements UrlInterface, RouteMatchingInterface, FilterAp
         /** @var Item $filterItem */
         foreach ($filters as $filterItem) {
             $filter = $filterItem->getFilter();
+
             $urlKey = $filter->getUrlKey();
-            $selectionType = $filter->getFacet()->getFacetSettings()->getSelectionType();
-            if ($selectionType === SettingsType::SELECTION_TYPE_SLIDER) {
+            $facetSettings = $filter->getFacet()->getFacetSettings();
+            if ($facetSettings->getSource() === SettingsType::SOURCE_CATEGORY) {
+                continue;
+            }
+
+            if ($facetSettings->getSelectionType() === SettingsType::SELECTION_TYPE_SLIDER) {
                 $slug = $filterItem->getAttribute()->getTitle();
             } else {
                 $slug = $this->filterSlugManager->getSlugForFilterItem($filterItem);
@@ -362,30 +367,6 @@ class PathSlugStrategy implements UrlInterface, RouteMatchingInterface, FilterAp
     /**
      * @param HttpRequest $request
      * @param Item $item
-     * @return string
-     */
-    public function getCategoryTreeSelectUrl(
-        HttpRequest $request,
-        Item $item
-    ): string {
-        return $this->queryParameterStrategy->getCategoryTreeSelectUrl($request, $item);
-    }
-
-    /**
-     * @param HttpRequest $request
-     * @param Item $item
-     * @return mixed
-     */
-    public function getCategoryTreeRemoveUrl(
-        HttpRequest $request,
-        Item $item
-    ): string {
-        return $this->queryParameterStrategy->getCategoryTreeRemoveUrl($request, $item);
-    }
-
-    /**
-     * @param HttpRequest $request
-     * @param Item $item
      * @param CategoryInterface $category
      * @return mixed
      */
@@ -406,6 +387,6 @@ class PathSlugStrategy implements UrlInterface, RouteMatchingInterface, FilterAp
         HttpRequest $request,
         Item $item
     ): string {
-        return $this->getAttributeRemoveUrl($request, $item);
+        return $this->queryParameterStrategy->getCategoryFilterRemoveUrl($request, $item);
     }
 }
