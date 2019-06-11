@@ -15,7 +15,6 @@ use Emico\Tweakwise\Model\Catalog\Layer\Url\UrlInterface;
 use Emico\Tweakwise\Model\Client\Request\ProductNavigationRequest;
 use Emico\Tweakwise\Model\Catalog\Layer\Url\UrlModel;
 use Emico\Tweakwise\Model\Client\Request\ProductSearchRequest;
-use Emico\Tweakwise\Model\Client\Type\FacetType\CategorySettingsType;
 use Magento\Catalog\Api\Data\CategoryInterface;
 use Zend\Http\Request as HttpRequest;
 
@@ -135,31 +134,24 @@ class QueryParameterStrategy implements UrlInterface, FilterApplierInterface, Ca
      */
     public function getCategoryTreeSelectUrl(HttpRequest $request, Item $item, CategoryInterface $category): string
     {
-        /** @var CategorySettingsType $facetSettings */
-        $facetSettings = $item
-            ->getFilter()
-            ->getFacet()
-            ->getFacetSettings();
+        $filter = $item->getFilter();
+        $facet = $filter->getFacet();
+        $settings = $facet->getFacetSettings();
+        $urlKey = $settings->getUrlKey();
 
-        $urlKey = $facetSettings->getUrlKey();
-
-        $minDepth = $facetSettings->getMinDepth();
-        $maxDepth = $facetSettings->getMaxDepth();
-
-        $categoryPathArray = explode('/', $category->getPath());
-
-        $requestCategories = array_slice(
-            $categoryPathArray,
-            $minDepth,
-            ($maxDepth - $minDepth) + 1
-        );
-
-        $categoryId = $category->getId();
-        if (!in_array($categoryId, $requestCategories, false)) {
-            $requestCategories[] = $categoryId;
+        $requestData = $request->getQuery($urlKey);
+        if (!$requestData) {
+            $requestData = [];
+        } else {
+            $requestData = explode(self::CATEGORY_TREE_SEPARATOR, $requestData);
         }
 
-        $query = [$urlKey => implode(self::CATEGORY_TREE_SEPARATOR, $requestCategories)];
+        $categoryId = $category->getId();
+        if (!in_array($categoryId, $requestData)) {
+            $requestData[] = $categoryId;
+        }
+
+        $query = [$urlKey => join(self::CATEGORY_TREE_SEPARATOR, $requestData)];
         return $this->getCurrentQueryUrl($query);
     }
 
@@ -330,8 +322,8 @@ class QueryParameterStrategy implements UrlInterface, FilterApplierInterface, Ca
     public function apply(HttpRequest $request, ProductNavigationRequest $navigationRequest): FilterApplierInterface
     {
         $categories = $this->getCategoryFilters($request);
-        if ($categories) {
-            $navigationRequest->addCategoryPathFilter($categories);
+        foreach ($categories as $categoryId) {
+            $navigationRequest->addCategoryFilter($categoryId);
         }
 
         $attributeFilters = $this->getAttributeFilters($request);

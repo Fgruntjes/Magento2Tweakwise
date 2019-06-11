@@ -9,52 +9,14 @@
 namespace Emico\Tweakwise\Model\Observer;
 
 use Magento\Framework\Event\Observer;
-use Emico\Tweakwise\Model\Catalog\Layer\NavigationContext;
-use Emico\Tweakwise\Model\Config;
-use Magento\Framework\App\Action\Context;
-use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\HTTP\PhpEnvironment\Response;
 
-class CatalogLastPageRedirect implements ObserverInterface
+class CatalogLastPageRedirect extends AbstractProductNavigationRequestObserver
 {
-    /**
-     * @var Config
-     */
-    protected $config;
-
-    /**
-     * @var NavigationContext
-     */
-    protected $context;
-
-    /**
-     * @var Context
-     */
-    private $actionContext;
-
-    /**
-     * CatalogSearchRedirect constructor.
-     * @param Config $config
-     * @param NavigationContext $context
-     * @param Context $actionContext
-     */
-    public function __construct(Config $config, NavigationContext $context, Context $actionContext)
-    {
-        $this->config = $config;
-        $this->context = $context;
-        $this->actionContext = $actionContext;
-    }
-
     /**
      * {@inheritdoc}
      */
-    public function execute(Observer $observer)
+    protected function _execute(Observer $observer)
     {
-        $response = $this->getHttpResponse();
-        if (!$response || $response->isRedirect()) {
-            return;
-        }
-
         $properties = $this->context->getResponse()->getProperties();
         if (!$properties->getNumberOfItems()) {
             return;
@@ -66,25 +28,12 @@ class CatalogLastPageRedirect implements ObserverInterface
             return;
         }
 
-        $url = $this->actionContext->getUrl()->getUrl('*/*/*', [
+        $url = $this->urlBuilder->getUrl('*/*/*', [
             '_current' => true,
             '_use_rewrite' => true,
             '_query' => ['p' => $lastPage]
         ]);
 
-        $response->setRedirect($url);
-    }
-
-    /**
-     * @return Response|null
-     */
-    protected function getHttpResponse()
-    {
-        $response = $this->actionContext->getResponse();
-        if (!$response instanceof Response) {
-            return null;
-        }
-
-        return $response;
+        $this->getHttpResponse()->setRedirect($url);
     }
 }
